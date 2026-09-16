@@ -1,0 +1,130 @@
+// Prisma Schema for Univia Campus Community Platform
+// Multi-identifier user authentication, society relations, and event moderation
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  GUEST
+  STUDENT
+  SOCIETY_LEAD
+  ADMIN
+}
+
+enum EventStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id             String    @id @default(uuid())
+  student_id     String?   @unique
+  phone          String?   @unique
+  username       String?   @unique
+  email          String    @unique
+  password_hash  String
+  role           Role      @default(STUDENT)
+  name           String
+  avatar         String?
+  major          String?
+  class_year     String?
+  campus_card_id String?
+  is_active      Boolean   @default(true)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  // Relations
+  organized_events Event[]       @relation("EventOrganizer")
+  led_societies    Societies[]   @relation("SocietyLeader")
+  society_members  SocietyMember[]
+  admin_reviews    EventReview[] @relation("AdminReviewer")
+
+  @@index([student_id])
+  @@index([phone])
+  @@index([username])
+  @@index([email])
+  @@map("users")
+}
+
+model Societies {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  category    String
+  description String?  @db.Text
+  avatar      String?
+  banner_url  String?
+  lead_id     String?
+  leader      User?    @relation("SocietyLeader", fields: [lead_id], references: [id], onDelete: SetNull)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  events      Event[]
+  members     SocietyMember[]
+
+  @@map("societies")
+}
+
+model SocietyMember {
+  id         String    @id @default(uuid())
+  user_id    String
+  society_id String
+  role       String    @default("MEMBER")
+  joined_at  DateTime  @default(now())
+
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  society    Societies @relation(fields: [society_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, society_id])
+  @@map("society_members")
+}
+
+model Event {
+  id            String      @id @default(uuid())
+  title         String
+  description   String      @db.Text
+  date          String
+  time          String
+  location      String
+  category      String      @default("Tech & Innovation")
+  organizer_id  String
+  society_id    String
+  status        EventStatus @default(PENDING)
+  is_visible    Boolean     @default(false)
+  max_attendees Int         @default(100)
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+
+  // Relations
+  organizer     User        @relation("EventOrganizer", fields: [organizer_id], references: [id], onDelete: Cascade)
+  society       Societies   @relation(fields: [society_id], references: [id], onDelete: Cascade)
+  reviews       EventReview[]
+
+  @@index([status])
+  @@index([is_visible])
+  @@index([organizer_id])
+  @@index([society_id])
+  @@map("events")
+}
+
+model EventReview {
+  id          String      @id @default(uuid())
+  event_id    String
+  admin_id    String
+  decision    EventStatus
+  feedback    String?     @db.Text
+  reviewed_at DateTime    @default(now())
+
+  event       Event       @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  admin       User        @relation("AdminReviewer", fields: [admin_id], references: [id], onDelete: Cascade)
+
+  @@map("event_reviews")
+}

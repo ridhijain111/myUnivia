@@ -1,0 +1,11 @@
+{
+  "name": "Univia",
+  "description": "Univia is an all-in-one campus ecosystem that brings events, societies, opportunities, announcements, communities, and student information into one organized platform. Powered by Nova AI, Univia turns scattered college updates from chats and emails into clear, actionable information—helping students stay informed, discover opportunities, and never miss what matters.\n",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
